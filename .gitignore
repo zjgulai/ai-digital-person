@@ -1,0 +1,26 @@
+# 私钥 / 证书 - 绝不提交
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+ai_video.pem
+
+# 操作系统
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 临时文件
+*.log
+*.tmp
