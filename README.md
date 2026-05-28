@@ -1,6 +1,10 @@
-# AI 数字员工租赁平台
+# AI 数字员工租赁平台（发布产物仓库）
 
 > 55 种专业 AI 数字员工，覆盖 2721 个业务模型，助力企业战略、数据分析、营销、法律、财务等全场景智能化升级。
+
+> ⚠️ **本仓库存放的是构建产物（dist），不是源码。**
+> 源码项目位于：`/Users/lute/project/Agent/product/ai_employ_platform_src/`
+> 所有 UI 修改、功能迭代请在源码项目中进行，build 后将 `dist/` 同步到本仓库。
 
 ---
 
@@ -57,31 +61,55 @@
 
 | 层次 | 技术 |
 |---|---|
-| 前端框架 | React + Vite（预构建静态产物） |
-| 样式 | Tailwind CSS |
-| 数据层 | 静态 JSON（`data/roles.json`） |
+| 前端框架 | React 19 + TypeScript + Vite 5 |
+| 样式 | Tailwind CSS v3 + CSS 变量主题系统 |
+| 路由 | React Router DOM v7 |
+| 图标 | lucide-react |
+| 数据层 | 静态 JSON（`data/roles.json`，55 角色 × 2721 模型） |
 | 生产部署 | Nginx（复用 `ai_video_nginx` 容器）+ Let's Encrypt TLS |
 | 备用部署 | GitHub Pages（`main` 分支自动发布） |
 
 ---
 
-## 项目目录结构
+## 仓库说明：产物 vs 源码
+
+本仓库（`ai_employ_platform`）存放的是 **Vite 构建后的 dist 产物**，用于直接部署：
 
 ```
-ai_employ_platform/
-├── index.html                 # 入口 HTML（lang=zh-CN，含 SEO meta）
+ai_employ_platform/           ← 本仓库（发布产物）
+├── index.html                # 入口 HTML
 ├── assets/
-│   ├── index-CuBuKeQA.js      # Vite 打包主 JS bundle（~405 KB）
-│   └── index-xamrtRg3.css     # 主样式（~104 KB）
+│   ├── index-Bea_gqK8.js    # 主 JS bundle（~290 KB）
+│   └── index-BIlXnRl6.css   # 主样式（~20 KB，含完整 Tailwind）
 ├── data/
-│   └── roles.json             # 55 角色 × 2721 模型数据（去重后）
-├── .gitignore                 # 排除 *.pem / .DS_Store 等
-├── .nojekyll                  # GitHub Pages 必须，禁用 Jekyll 处理
-├── README.md                  # 本文档
-└── ai_video.pem               # SSH 私钥（本地保留，永不提交）
+│   └── roles.json            # 55 角色 × 2721 模型数据
+├── favicon.svg / icons.svg   # 图标资源
+├── .gitignore                # 排除 *.pem / .DS_Store
+├── .nojekyll                 # GitHub Pages 必须
+└── ai_video.pem              # SSH 私钥（永不提交）
 ```
 
-> ⚠️ `ai_video.pem` 是腾讯云服务器 SSH 私钥，`.gitignore` 已双重排除，**绝不可提交到任何 Git 仓库**。
+源码项目（二次开发请在此操作）：
+
+```
+/Users/lute/project/Agent/product/ai_employ_platform_src/   ← 源码项目
+├── src/
+│   ├── types/index.ts           # TypeScript 类型定义
+│   ├── data/
+│   │   ├── roleDetails.ts       # 角色详情数据（7个完整 + 通用模板）
+│   │   └── pricingPlans.ts      # 定价方案 + FAQ
+│   ├── lib/dataService.ts       # roles.json 加载 + 缓存
+│   ├── components/              # Navbar / Footer / BackToTop
+│   ├── sections/                # Hero / Benefits / HowItWorks / TopRoles / CTA
+│   └── pages/                   # Home / Marketplace / RoleDetail / Pricing / About
+├── public/data/roles.json       # 开发时数据（与 dist 同步）
+├── postcss.config.mjs           # ⚠️ .mjs 格式（Node 26 + ESM 兼容）
+├── tailwind.config.js
+└── vite.config.ts
+```
+
+> ⚠️ **Node 兼容性注意**：本项目使用 Node v26.0.0。须用 Vite 5（不兼容 Vite 8）。
+> PostCSS 配置必须是 `postcss.config.mjs`（ESM 格式），不能是 `.js` 或 `.cjs`。
 
 ---
 
@@ -146,22 +174,39 @@ server {
 
 ---
 
-## 本地预览
+## 二次开发标准流程
+
+**所有 UI / 功能改动都在源码项目进行，禁止直接修改产物文件。**
 
 ```bash
-# 克隆仓库
-git clone https://github.com/zjgulai/ai-digital-person.git
-cd ai-digital-person
+# Step 1：进入源码目录
+cd /Users/lute/project/Agent/product/ai_employ_platform_src
 
-# 方案一：Python（零依赖）
-python3 -m http.server 8080
-# 访问 http://localhost:8080
+# Step 2：开发（热重载预览）
+npm run dev         # 访问 http://localhost:5173
 
-# 方案二：Node.js
-npx serve .
+# Step 3：构建
+npm run build       # 产物输出到 dist/
+
+# Step 4：同步产物到本仓库（发布产物）
+rsync -av --delete dist/ /Users/lute/project/Agent/product/ai_employ_platform/
+# 注意：排除 .git/ .gitignore .nojekyll ai_video.pem README.md
+# 实际执行时加 --exclude 或手动复制 assets/ data/ index.html
+
+# Step 5：同步到生产服务器
+rsync -avz --delete \
+  -e "ssh -i /path/to/ai_video.pem" \
+  dist/ \
+  ubuntu@101.34.52.232:/opt/ai-employ-platform/html/
+
+# Step 6：推送到 GitHub（同步 GitHub Pages）
+git add assets/ data/ index.html
+git commit -m "feat: <描述>"
+git push origin main
 ```
 
-> 本项目是**纯静态产物**，无需任何构建步骤，直接用静态服务器即可运行。
+> 详细开发说明见源码项目：`/Users/lute/project/Agent/product/ai_employ_platform_src/README.md`
+> 产品迭代路线图见：`/Users/lute/project/Agent/product/ai_employ_platform_src/ROADMAP.md`
 
 ---
 
@@ -344,10 +389,11 @@ ssh -i ai_video.pem ubuntu@101.34.52.232 \
 | 日期 | 内容 |
 |---|---|
 | 2026-05-27 | 项目初始化，推送至 GitHub（`zjgulai/ai-digital-person`），开启 GitHub Pages |
-| 2026-05-28 | 修复 HTML `lang` 属性（en→zh-CN），添加 SEO meta description/keywords/robots |
-| 2026-05-28 | 去除 `data/roles.json` 中 40 处重复 model 条目，同步修正 `model_count` |
+| 2026-05-28 | 修复 HTML `lang` 属性（en→zh-CN），添加 SEO meta；去除 `data/roles.json` 中 40 处重复 model |
 | 2026-05-28 | 腾讯云生产部署：SSL 证书 expand、nginx 追加 server 块、docker-compose 追加 volume mount |
-| 2026-05-28 | 宿主导航页 [lute-tlz-dddd.top](https://lute-tlz-dddd.top) 添加本项目卡片（第 8 张，Teal `#3B8C82` 色系） |
+| 2026-05-28 | 宿主导航页 [lute-tlz-dddd.top](https://lute-tlz-dddd.top) 添加本项目卡片（第 8 张，Teal 色系）|
+| 2026-05-28 | **源码重建**：从 bundle 反推还原完整 React 19 + TypeScript 源码项目（`ai_employ_platform_src`），实现 5 页完整 SPA（首页/市场/详情/定价/关于），含 Tailwind CSS 完整编译 |
+| 2026-05-28 | 修复 Tailwind 未编译 bug：PostCSS 配置缺失导致样式全部失效，改用 `postcss.config.mjs` 修复 |
 
 ---
 
